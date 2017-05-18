@@ -7,6 +7,7 @@ import random                   # nopep8
 random.seed(seed)
 
 import torch                    # nopep8
+
 try:
     torch.cuda.manual_seed(seed)
 except:
@@ -127,7 +128,7 @@ if __name__ == '__main__':
     sample_fn = getattr(d, args.sample_fn)
 
     if args.path != '':
-        with open(args.path, 'rb+') as f:
+        with open(args.path, 'rb+') as f:   
             dataset = PairedDataset.from_disk(f)
         dataset.set_batch_size(args.batch_size)
         dataset.set_gpu(args.gpu)
@@ -150,6 +151,9 @@ if __name__ == '__main__':
     print(' * maximum batch size. %d' % batch_size)
 
     print('Building model...')
+
+
+    # Build the model.
 
     model = EncoderDecoder(
         (args.layers, args.dec_layers), args.emb_dim, args.hid_dim,
@@ -180,7 +184,8 @@ if __name__ == '__main__':
     trainer = EncoderDecoderTrainer(
         model, {'train': train, 'valid': valid}, criterion, optimizer)
     trainer.add_loggers(StdLogger())
-    trainer.add_loggers(VisdomLogger(env='encdec'))
+
+    # trainer.add_loggers(VisdomLogger(env='encdec'))
 
     hook = make_encdec_hook(args.target, args.gpu, beam=args.beam)
     num_checkpoints = len(train) // (args.checkpoint * args.hooks_per_epoch)
