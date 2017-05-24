@@ -208,7 +208,7 @@ class Trainer(object):
         source, targets = batch_data
         outs = self.model(source)
         loss = self.criterion(outs, targets.view(-1))
-        if dataset == 'train':
+        if dataset == 'tr':
             self.merge_loss(loss).backward()
             self.optimizer_step()
         return (loss.data[0], )

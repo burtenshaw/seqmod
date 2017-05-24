@@ -1,20 +1,7 @@
-
-import os
-
-seed = 1001
-
-import random
-random.seed(seed)
-
 import torch
 from torchtext.vocab import load_word_vectors
-try:
-    torch.cuda.manual_seed(seed)
-except:
-    print('no NVIDIA driver found')
-torch.manual_seed(seed)
-
-from train_encoder_decoder import make_encdec_hook, make_criterion
+import random
+import os
 
 from seqmod.modules.encoder_decoder import EncoderDecoder
 from seqmod import utils as u
@@ -22,8 +9,19 @@ from seqmod import utils as u
 from seqmod.misc.dataset import PairedDataset, Dict
 from seqmod.misc.optimizer import Optimizer
 from seqmod.misc.trainer import EncoderDecoderTrainer
-from seqmod.misc.loggers import StdLogger, VisdomLogger
+from seqmod.misc.loggers import StdLogger, VisdomLogger, notesLogger
 from seqmod.misc.preprocess import text_processor
+
+from train_encoder_decoder import make_encdec_hook, make_criterion
+
+seed = 1001
+random.seed(seed)
+torch.manual_seed(seed)
+
+try:
+    torch.cuda.manual_seed(seed)
+except:
+    print('no NVIDIA driver found')
 
 '''
 A script for generating questions from answers.
@@ -47,14 +45,15 @@ if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('--path', required=True,
-                        help='Path to the a directory containing source and target text files')
-    parser.add_argument('--target', default=None)
+                        help='Path to the a directory '
+                        'containing source and target text files')
     parser.add_argument('--pretrained', type=str, default='empty')
 
     parser.add_argument('--dev', default=0.1, type=float)
     parser.add_argument('--max_size', default=10000, type=int)
     parser.add_argument('--min_freq', default=5, type=int)
     parser.add_argument('--bidi', action='store_false')
+    parser.add_argument('--target', default=None)
     parser.add_argument('--layers', default=1, type=int)
     parser.add_argument('--cell', default='LSTM')
     parser.add_argument('--emb_dim', default=264, type=int)
@@ -94,9 +93,7 @@ if __name__ == '__main__':
     print(' * number of train batches. %d' % len(train))
     print(' * maximum batch size. %d' % args.batch_size)
 
-
     print('Building model...')
-
     model = EncoderDecoder(
         # removed (args.hid_dim, args.hid_dim) added args.hid_dim
         (args.layers, args.layers), args.emb_dim, args.hid_dim,
@@ -106,7 +103,8 @@ if __name__ == '__main__':
     # Load Glove Pretrained Embeddings
 
     if args.pretrained != 'empty':
-        wv_dict, wv_arr, wv_size = load_word_vectors(args.pretrained, 'glove.6B', 50)
+        wv_dict, wv_arr, wv_size = load_word_vectors(
+            args.pretrained, 'glove.6B', 50)
         print('Loaded', len(wv_arr), 'words from pretrained embeddings.')
         model.emb_dim = wv_size
         wv_list = list(wv_dict)
@@ -123,7 +121,6 @@ if __name__ == '__main__':
 
     print('* number of parameters: %d' % model.n_params())
 
-
     print(model)
 
     if args.gpu:
@@ -131,16 +128,15 @@ if __name__ == '__main__':
 
     trainer = EncoderDecoderTrainer(
         model, {'train': train, 'valid': valid}, criterion, optimizer)
+    
+    # target = args.target.split() if args.target else None
+    # hook = make_encdec_hook(args.target, args.gpu)
 
     # Logging
     if args.logging:
-        trainer.add_loggers(StdLogger())
+        trainer.add_loggers(notesLogger(args=args, model=model))
     if args.visdom:
         trainer.add_loggers(StdLogger(), VisdomLogger(env='encdec'))
-
-    target = args.target.split() if args.target else None
-    hook = make_encdec_hook(args.target, args.gpu)
     num_checkpoints = len(train) // (args.checkpoint * args.hooks_per_epoch)
-    trainer.add_hook(hook, num_checkpoints=num_checkpoints)
-
+    # trainer.add_hook(hook, num_checkpoints=num_checkpoints)
     trainer.train(args.epochs, args.checkpoint, shuffle=True, gpu=args.gpu)

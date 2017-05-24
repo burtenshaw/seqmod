@@ -189,10 +189,13 @@ class EncoderDecoder(nn.Module):
         """
         if isinstance(weight, np.ndarray):
             weight = torch.from_numpy(weight)
+        
         assert weight.size(1) == self.emb_dim, \
             "Mismatched embedding dim %d for model with dim %d" % \
             (weight.size(1), self.emb_dim)
+        
         target_words = {word: idx for idx, word in enumerate(words)}
+
         for idx, word in enumerate(self.src_dict.vocab):
             if word not in target_words:
                 if verbose:
