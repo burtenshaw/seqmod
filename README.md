@@ -20,7 +20,6 @@ python questions.py --path data/faq_0/train --target /home/burtenshaw/code/IMDB/
 
 * ```--gpu```
 * ```--bidi```
-* 
 
 ### Example
 
