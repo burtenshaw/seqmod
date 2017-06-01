@@ -44,38 +44,46 @@ def load_data(path, exts, text_processor=text_processor()):
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser()
+
+    # Model Params
+    parser.add_argument('--dev', default=0.1, type=float)
+    parser.add_argument('--max_size', default=10000, type=int)
+    parser.add_argument('--min_freq', default=5, type=int)
+    parser.add_argument('--layers', default=1, type=int)
+    parser.add_argument('--cell', default='LSTM')
+    parser.add_argument('--emb_dim', default=264, type=int)
+    parser.add_argument('--target', default=None)
+    parser.add_argument('--hid_dim', default=128, type=int)
+    parser.add_argument('--att_dim', default=64, type=int)
+    parser.add_argument('--att_type', default='Bahdanau', type=str)
+    parser.add_argument('--dropout', default=0.2, type=float)
+    parser.add_argument('--checkpoint', default=50, type=int)
+    parser.add_argument('--hooks_per_epoch', default=2, type=int)
+    parser.add_argument('--optim', default='RMSprop', type=str)
+    parser.add_argument('--learning_rate', default=0.01, type=float)
+    parser.add_argument('--learning_rate_decay', default=0.5, type=float)
+    parser.add_argument('--start_decay_at', default=8, type=int)
+    parser.add_argument('--max_grad_norm', default=5., type=float)
+    parser.add_argument('--batch_size', default=64, type=int)
+    parser.add_argument('--epochs', default=20, type=int)
+
+    #Booleans    
+    parser.add_argument('--project_init', action='store_true')
+    parser.add_argument('--bidi', action='store_false')
+    parser.add_argument('--plot', action='store_true')
+    parser.add_argument('--beam', action='store_true')
+    parser.add_argument('--gpu', action='store_true')
+
+    # Paths
     parser.add_argument('--path', required=True,
                         help='Path to the a directory '
                         'containing source and target text files')
     parser.add_argument('--pretrained', type=str, default='empty')
 
-    parser.add_argument('--dev', default=0.1, type=float)
-    parser.add_argument('--max_size', default=10000, type=int)
-    parser.add_argument('--min_freq', default=5, type=int)
-    parser.add_argument('--bidi', action='store_false')
-    parser.add_argument('--target', default=None)
-    parser.add_argument('--layers', default=1, type=int)
-    parser.add_argument('--cell', default='LSTM')
-    parser.add_argument('--emb_dim', default=264, type=int)
-    parser.add_argument('--hid_dim', default=128, type=int)
-    parser.add_argument('--att_dim', default=64, type=int)
-    parser.add_argument('--att_type', default='Bahdanau', type=str)
-    parser.add_argument('--dropout', default=0.2, type=float)
-    parser.add_argument('--project_init', action='store_true')
-    parser.add_argument('--batch_size', default=64, type=int)
-    parser.add_argument('--epochs', default=20, type=int)
-    parser.add_argument('--checkpoint', default=50, type=int)
-    parser.add_argument('--hooks_per_epoch', default=2, type=int)
-    parser.add_argument('--optim', default='RMSprop', type=str)
-    parser.add_argument('--plot', action='store_true')
-    parser.add_argument('--learning_rate', default=0.01, type=float)
-    parser.add_argument('--learning_rate_decay', default=0.5, type=float)
-    parser.add_argument('--start_decay_at', default=8, type=int)
-    parser.add_argument('--max_grad_norm', default=5., type=float)
-    parser.add_argument('--beam', action='store_true')
-    parser.add_argument('--gpu', action='store_true')
-
     # Logging
+    parser.add_argument('--gen_src', default=None)
+    parser.add_argument('--gen_tgt', default=None)
+    parser.add_argument('--csv', type=str, default='empty')
     parser.add_argument('--logging', action='store_true')
     parser.add_argument('--visdom', action='store_true')
     args = parser.parse_args()
@@ -133,8 +141,10 @@ if __name__ == '__main__':
     # hook = make_encdec_hook(args.target, args.gpu)
 
     # Logging
+    if args.csv != 'empty':
+        trainer.add_loggers(notesLogger(args=args, model=model, save_path=args.csv))
     if args.logging:
-        trainer.add_loggers(notesLogger(args=args, model=model))
+        trainer.add_loggers(StdLogger(args=args, model=model))
     if args.visdom:
         trainer.add_loggers(StdLogger(), VisdomLogger(env='encdec'))
     num_checkpoints = len(train) // (args.checkpoint * args.hooks_per_epoch)

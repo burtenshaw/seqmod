@@ -191,7 +191,7 @@ class notesLogger(Logger):
                  msgfmt="[%(asctime)s] %(message)s",
                  datefmt='%m-%d %H:%M:%S',
                  args=None,
-                 save_path="/home/burtenshaw/logging/testing_logger.csv",
+                 save_path=None,
                  model=None):
         self.logger = logging.getLogger(__name__)
         self.logger.propagate = False
@@ -201,6 +201,8 @@ class notesLogger(Logger):
         self.save_path = save_path
         self.target = args.target
         self.model = model
+        self.gen_src = args.gen_src
+        self.gen_tgt = args.gen_tgt
         formatter = logging.Formatter(msgfmt, datefmt)
         sh = logging.StreamHandler()
         sh.setFormatter(formatter)
@@ -269,8 +271,8 @@ class notesLogger(Logger):
         l = payload['loss']['loss']
 
         # Language Metrics
-        target_string = self.target
-        gen = translate(self.model, self.target, self.args.gpu)
+        target_string = self.gen_tgt
+        gen = translate(self.model, self.gen_src, self.args.gpu)
 
         # Smith Waterman
         sw = nlp.smith_waterman(target_string, gen)
